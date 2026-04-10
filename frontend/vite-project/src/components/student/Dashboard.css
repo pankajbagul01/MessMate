@@ -1,0 +1,284 @@
+@import '../../theme.css';
+
+.dashboard {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 20px 48px;
+}
+
+/* ── Alerts ── */
+.dash-alert {
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+.dash-alert.success { background: rgba(22,163,74,0.1); border-left: 4px solid var(--success); color: var(--success); }
+.dash-alert.error   { background: rgba(220,38,38,0.08); border-left: 4px solid var(--danger);  color: var(--danger); }
+
+/* ── Closure banner ── */
+.closure-banner {
+  background: rgba(220,38,38,0.06);
+  border: 1px solid rgba(220,38,38,0.2);
+  border-left: 4px solid var(--danger);
+  color: #991B1B;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+/* ── Header ── */
+.dash-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.dash-header h1 {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+.dash-date {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+.btn-book-now {
+  padding: 10px 22px;
+  background: var(--gradient-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.18s;
+  box-shadow: 0 2px 8px rgba(249,115,22,0.25);
+}
+.btn-book-now:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(249,115,22,0.35); }
+
+/* ── Sections ── */
+.dash-section { margin-bottom: 40px; }
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.section-icon { font-size: 20px; }
+.section-title h2 { font-size: 18px; font-weight: 600; color: var(--text-primary); }
+.section-note {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+
+/* ── Meals Grid ── */
+.meals-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+/* ── Meal Card ── */
+.meal-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  border: 1.5px solid var(--border);
+  transition: box-shadow 0.18s;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.meal-card:hover { box-shadow: var(--shadow-md); }
+
+.meal-card.status-booked  { border-color: rgba(22,163,74,0.35); }
+.meal-card.status-default { border-color: rgba(249,115,22,0.3); }
+.meal-card.status-closed  { opacity: 0.55; }
+.meal-card.status-not-booked { border-color: var(--border); }
+
+.meal-card-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.meal-emoji { font-size: 26px; flex-shrink: 0; }
+.meal-card-info { flex: 1; min-width: 0; }
+.meal-card-name { display: block; font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.meal-card-time { display: block; font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+
+/* Status pills */
+.status-pill {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.pill-booked     { background: rgba(22,163,74,0.12);  color: #15803D; }
+.pill-default    { background: rgba(249,115,22,0.12); color: #C2410C; }
+.pill-not-booked { background: var(--bg-secondary);   color: var(--text-muted); }
+.pill-closed     { background: rgba(148,163,184,0.15); color: var(--closed); }
+
+/* Items */
+.meal-items-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.item-chip {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 12px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+}
+.meal-empty-note {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Action buttons on meal cards */
+.meal-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 2px;
+}
+.btn-cancel-meal, .btn-edit-meal {
+  flex: 1;
+  padding: 7px 0;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: 1.5px solid;
+}
+.btn-cancel-meal {
+  background: transparent;
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.btn-cancel-meal:hover:not(:disabled) { background: var(--danger); color: #fff; }
+.btn-cancel-meal:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-edit-meal {
+  background: var(--gradient-primary);
+  border-color: transparent;
+  color: #fff;
+}
+.btn-edit-meal:hover { opacity: 0.9; transform: translateY(-1px); }
+
+/* ── Weekly Menu Grid ── */
+.weekly-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+}
+
+.week-day-card {
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: box-shadow 0.18s;
+  min-width: 0;
+}
+.week-day-card:hover { box-shadow: var(--shadow-md); }
+.week-day-card.is-today    { border-color: var(--primary); background: rgba(249,115,22,0.03); }
+.week-day-card.is-tomorrow { border-color: rgba(249,115,22,0.4); }
+
+.week-day-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.week-day-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.week-day-date {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+}
+.week-day-card.is-today .week-day-date { color: var(--primary); }
+
+.week-badge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.week-badge.today    { background: rgba(249,115,22,0.15); color: #C2410C; }
+.week-badge.tomorrow { background: rgba(99,102,241,0.12); color: var(--accent-dark); }
+.week-badge.closed-day { background: rgba(220,38,38,0.1); color: var(--danger); }
+
+.week-meals { display: flex; flex-direction: column; gap: 5px; }
+.week-meal-row { display: flex; align-items: flex-start; gap: 5px; }
+.week-meal-icon { font-size: 12px; flex-shrink: 0; margin-top: 1px; }
+.week-meal-items { font-size: 11px; color: var(--text-secondary); line-height: 1.4; }
+.week-no-menu, .week-closure-note { font-size: 11px; color: var(--text-muted); font-style: italic; text-align: center; }
+
+.week-book-btn {
+  margin-top: auto;
+  width: 100%;
+  padding: 6px 0;
+  background: var(--gradient-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.week-book-btn:hover { opacity: 0.88; }
+
+.empty-menu-note {
+  font-size: 14px;
+  color: var(--text-muted);
+  padding: 24px;
+  text-align: center;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  border: 1.5px dashed var(--border);
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .weekly-menu-grid { grid-template-columns: repeat(4, 1fr); }
+}
+@media (max-width: 700px) {
+  .meals-grid { grid-template-columns: 1fr; }
+  .weekly-menu-grid { grid-template-columns: repeat(3, 1fr); }
+  .dash-header { flex-direction: column; }
+  .btn-book-now { width: 100%; text-align: center; }
+}
+@media (max-width: 480px) {
+  .weekly-menu-grid { grid-template-columns: repeat(2, 1fr); }
+}
