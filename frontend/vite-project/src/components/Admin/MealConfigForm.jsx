@@ -1,283 +1,378 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createMealConfig } from '../../services/api';
+import {
+  getAllMealConfigs, getMealConfigByDate,
+  updateMealConfig, deleteMealConfig, getWeeklyMenu
+} from '../../services/api';
 import './MealConfigForm.css';
 
+const MEALS      = ['breakfast', 'lunch', 'dinner'];
+const MEAL_ICONS = { breakfast: '🥐', lunch: '🍛', dinner: '🍽️' };
+const MEAL_COLORS= { breakfast: 'mc-b', lunch: 'mc-l', dinner: 'mc-d' };
+
+const todayStr = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+};
+const fmtDate = (s) => {
+  const [y,m,d] = s.split('-').map(Number);
+  return new Date(y,m-1,d).toLocaleDateString('en-IN',{ weekday:'short', day:'numeric', month:'short', year:'numeric' });
+};
+
 const MealConfigForm = () => {
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState({ type: '', text: '' });
-  const [selectedDate, setSelectedDate] = useState('');
-  
-  const [meals, setMeals] = useState({
-    breakfast: [],
-    lunch: [],
-    dinner: []
-  });
+  const navigate  = useNavigate();
+  const inputRef  = useRef(null);
 
-  const [currentItem, setCurrentItem] = useState({
-    mealType: 'breakfast',
-    name: '',
-    hasQuantity: false,
-    maxQuantity: ''
-  });
+  // ── state ──
+  const [selDate,      setSelDate]      = useState(todayStr());
+  const [activeMeal,   setActiveMeal]   = useState('breakfast');
+  const [draft,        setDraft]        = useState({ breakfast:[], lunch:[], dinner:[] });
+  const [existingDates, setExistingDates] = useState([]); // dates that have overrides
+  const [weeklyMenu,   setWeeklyMenu]   = useState({});   // { monday: { ... } }
+  const [loading,      setLoading]      = useState(true);
+  const [saving,       setSaving]       = useState(false);
+  const [deleting,     setDeleting]     = useState(false);
+  const [hasExisting,  setHasExisting]  = useState(false);
+  const [msg,          setMsg]          = useState({ type:'', text:'' });
 
-  const addItem = () => {
-    if (!currentItem.name.trim()) {
-      setMessage({ type: 'error', text: 'Please enter item name' });
-      setTimeout(() => setMessage({ type: '', text: '' }), 2000);
-      return;
-    }
+  // add-item form
+  const [newItem,   setNewItem]   = useState({ name:'', hasQuantity:false, maxQuantity:'' });
+  const [addError,  setAddError]  = useState('');
 
-    const newItem = {
-      name: currentItem.name,
-      hasQuantity: currentItem.hasQuantity,
-      maxQuantity: currentItem.hasQuantity ? parseInt(currentItem.maxQuantity) : null
-    };
+  useEffect(() => { fetchInitial(); }, []);
+  useEffect(() => { loadDateConfig(); }, [selDate]);
 
-    setMeals({
-      ...meals,
-      [currentItem.mealType]: [...meals[currentItem.mealType], newItem]
-    });
-
-    // Reset current item
-    setCurrentItem({
-      mealType: currentItem.mealType,
-      name: '',
-      hasQuantity: false,
-      maxQuantity: ''
-    });
+  const showMsg = (type, text) => {
+    setMsg({ type, text });
+    setTimeout(() => setMsg({ type:'', text:'' }), 4000);
   };
 
-  const removeItem = (mealType, index) => {
-    const updatedItems = meals[mealType].filter((_, i) => i !== index);
-    setMeals({
-      ...meals,
-      [mealType]: updatedItems
-    });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!selectedDate) {
-      setMessage({ type: 'error', text: 'Please select a date' });
-      setTimeout(() => setMessage({ type: '', text: '' }), 2000);
-      return;
-    }
-
-    if (meals.breakfast.length === 0 && meals.lunch.length === 0 && meals.dinner.length === 0) {
-      setMessage({ type: 'error', text: 'Please add at least one item to any meal' });
-      setTimeout(() => setMessage({ type: '', text: '' }), 2000);
-      return;
-    }
-
+  const fetchInitial = async () => {
     setLoading(true);
     try {
-      await createMealConfig({
-        date: selectedDate,
-        meals: meals
-      });
-      setMessage({ type: 'success', text: 'Meal configuration saved successfully!' });
-      setTimeout(() => {
-        navigate('/admin');
-      }, 2000);
-    } catch (error) {
-      setMessage({ type: 'error', text: error.response?.data?.message || 'Failed to save configuration' });
-      setTimeout(() => setMessage({ type: '', text: '' }), 3000);
-    } finally {
-      setLoading(false);
+      const [configsRes, menuRes] = await Promise.allSettled([
+        getAllMealConfigs(),
+        getWeeklyMenu(),
+      ]);
+      if (configsRes.status === 'fulfilled') {
+        setExistingDates((configsRes.value.data || []).map(c => c.date));
+      }
+      if (menuRes.status === 'fulfilled') {
+        const map = {};
+        (menuRes.value.data || []).forEach(d => { map[d.dayOfWeek] = d.meals; });
+        setWeeklyMenu(map);
+      }
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
+  };
+
+  const loadDateConfig = async () => {
+    try {
+      const res = await getMealConfigByDate(selDate);
+      setDraft(res.data.meals || { breakfast:[], lunch:[], dinner:[] });
+      setHasExisting(true);
+    } catch {
+      // 404 = no override for this date, start fresh
+      setDraft({ breakfast:[], lunch:[], dinner:[] });
+      setHasExisting(false);
     }
   };
 
-  const getItemCount = (mealType) => {
-    return meals[mealType].length;
+  // ── item helpers ──
+  const deepCopy = (o) => JSON.parse(JSON.stringify(o));
+
+  const handleAddItem = (e) => {
+    e.preventDefault();
+    const name = newItem.name.trim();
+    if (!name) { setAddError('Item name is required'); return; }
+    if (draft[activeMeal].find(i => i.name.toLowerCase() === name.toLowerCase())) {
+      setAddError('Item already exists in this meal'); return;
+    }
+    if (newItem.hasQuantity && (!newItem.maxQuantity || +newItem.maxQuantity < 1)) {
+      setAddError('Enter a valid max quantity'); return;
+    }
+    setDraft(prev => ({
+      ...prev,
+      [activeMeal]: [...prev[activeMeal], {
+        name,
+        hasQuantity: newItem.hasQuantity,
+        maxQuantity: newItem.hasQuantity ? +newItem.maxQuantity : null,
+      }]
+    }));
+    setNewItem({ name:'', hasQuantity:false, maxQuantity:'' });
+    setAddError('');
+    inputRef.current?.focus();
   };
 
+  const removeItem = (meal, idx) => {
+    setDraft(prev => ({ ...prev, [meal]: prev[meal].filter((_,i) => i !== idx) }));
+  };
+
+  const moveItem = (meal, idx, dir) => {
+    setDraft(prev => {
+      const arr = [...prev[meal]];
+      const to  = idx + dir;
+      if (to < 0 || to >= arr.length) return prev;
+      [arr[idx], arr[to]] = [arr[to], arr[idx]];
+      return { ...prev, [meal]: arr };
+    });
+  };
+
+  // ── copy weekly menu for this date's weekday into draft ──
+  const copyFromWeekly = () => {
+    const dayNames = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+    const [y,m,d]  = selDate.split('-').map(Number);
+    const dayName  = dayNames[new Date(y,m-1,d).getDay()];
+    const dayMenu  = weeklyMenu[dayName];
+    if (!dayMenu) { showMsg('error', `No weekly menu set for ${dayName}`); return; }
+    setDraft(deepCopy(dayMenu));
+    showMsg('success', `Loaded ${dayName}'s weekly menu — edit then save`);
+  };
+
+  // ── save ──
+  const handleSave = async () => {
+    const total = MEALS.reduce((s,m) => s + draft[m].length, 0);
+    if (total === 0) { showMsg('error', 'Add at least one item before saving'); return; }
+    setSaving(true);
+    try {
+      await updateMealConfig(selDate, { meals: draft });
+      showMsg('success', `Override saved for ${fmtDate(selDate)}`);
+      setHasExisting(true);
+      if (!existingDates.includes(selDate)) {
+        setExistingDates(prev => [...prev, selDate].sort());
+      }
+    } catch (e) {
+      showMsg('error', e.response?.data?.message || 'Save failed');
+    } finally { setSaving(false); }
+  };
+
+  // ── delete override ──
+  const handleDelete = async () => {
+    if (!window.confirm(`Delete the override for ${fmtDate(selDate)}? The weekly menu will be used instead.`)) return;
+    setDeleting(true);
+    try {
+      await deleteMealConfig(selDate);
+      showMsg('success', 'Override deleted — weekly menu will be used');
+      setDraft({ breakfast:[], lunch:[], dinner:[] });
+      setHasExisting(false);
+      setExistingDates(prev => prev.filter(d => d !== selDate));
+    } catch (e) {
+      showMsg('error', 'Delete failed');
+    } finally { setDeleting(false); }
+  };
+
+  const totalItems = MEALS.reduce((s,m) => s + draft[m].length, 0);
+  const upcomingOverrides = existingDates.filter(d => d >= todayStr()).sort();
+
+  if (loading) return (
+    <div className="loading-container"><div className="spinner"/><p>Loading...</p></div>
+  );
+
   return (
-    <div className="meal-config-container">
-      <div className="config-header">
-        <h1>Meal Configuration</h1>
-        <p>Set up menu items for breakfast, lunch, and dinner</p>
+    <div className="mc-container">
+
+      {/* Header */}
+      <div className="mc-header">
+        <div>
+          <button className="mc-back" onClick={() => navigate('/admin')}>← Dashboard</button>
+          <h1>Date-Specific Menu Override</h1>
+          <p>Override the weekly menu for a specific date — holidays, special events, or any one-off day.</p>
+        </div>
       </div>
 
-      {message.text && (
-        <div className={`alert alert-${message.type}`}>
-          {message.text}
-        </div>
-      )}
+      {/* Alert */}
+      {msg.text && <div className={`mc-alert mc-alert-${msg.type}`}>{msg.text}</div>}
 
-      <form onSubmit={handleSubmit} className="config-form">
-        {/* Date Selection */}
-        <div className="form-card">
-          <h2>Select Date</h2>
-          <div className="form-group">
-            <label>Date *</label>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              min={new Date().toISOString().split('T')[0]}
-              required
-            />
-            <small>Select the date for which you want to set the menu</small>
-          </div>
-        </div>
+      <div className="mc-layout">
 
-        {/* Meal Type Tabs */}
-        <div className="meal-tabs">
-          {['breakfast', 'lunch', 'dinner'].map((meal) => (
-            <button
-              key={meal}
-              type="button"
-              className={`tab-btn ${currentItem.mealType === meal ? 'active' : ''}`}
-              onClick={() => setCurrentItem({ ...currentItem, mealType: meal })}
-            >
-              {meal === 'breakfast' && '🥐 Breakfast'}
-              {meal === 'lunch' && '🍛 Lunch'}
-              {meal === 'dinner' && '🍽️ Dinner'}
-              <span className="item-count">{getItemCount(meal)} items</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Add Item Form */}
-        <div className="form-card">
-          <h2>Add Item to {currentItem.mealType === 'breakfast' ? '🥐 Breakfast' : currentItem.mealType === 'lunch' ? '🍛 Lunch' : '🍽️ Dinner'}</h2>
-          
-          <div className="form-group">
-            <label>Item Name *</label>
-            <input
-              type="text"
-              placeholder="e.g., Rice, Dal, Chapati, Coffee"
-              value={currentItem.name}
-              onChange={(e) => setCurrentItem({ ...currentItem, name: e.target.value })}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={currentItem.hasQuantity}
-                onChange={(e) => setCurrentItem({ ...currentItem, hasQuantity: e.target.checked })}
-              />
-              Enable quantity tracking (e.g., number of chapati, cups of coffee)
-            </label>
-          </div>
-
-          {currentItem.hasQuantity && (
-            <div className="form-group">
-              <label>Maximum Quantity per Person</label>
-              <input
-                type="number"
-                placeholder="e.g., 4"
-                value={currentItem.maxQuantity}
-                onChange={(e) => setCurrentItem({ ...currentItem, maxQuantity: e.target.value })}
-                min="1"
-              />
-              <small>Maximum amount a student can order</small>
-            </div>
+        {/* LEFT: Existing overrides sidebar */}
+        <div className="mc-sidebar">
+          <div className="mc-sidebar-label">Existing overrides</div>
+          {upcomingOverrides.length === 0 ? (
+            <p className="mc-no-overrides">No upcoming overrides</p>
+          ) : (
+            upcomingOverrides.map(d => (
+              <button
+                key={d}
+                className={`mc-date-row ${selDate === d ? 'active' : ''}`}
+                onClick={() => setSelDate(d)}
+              >
+                <div className="mc-date-row-left">
+                  <span className="mc-date-row-date">{fmtDate(d)}</span>
+                  {d === todayStr() && <span className="mc-today-dot" />}
+                </div>
+                <span className="mc-override-badge">Override</span>
+              </button>
+            ))
           )}
 
-          <button type="button" className="btn-add" onClick={addItem}>
-            + Add Item
-          </button>
+          <div className="mc-sidebar-label" style={{marginTop:20}}>How overrides work</div>
+          <div className="mc-how-it-works">
+            <div className="mc-how-row">
+              <span>1.</span>
+              <span>Pick a date and build a custom menu</span>
+            </div>
+            <div className="mc-how-row">
+              <span>2.</span>
+              <span>Save — this overrides the weekly menu for that day only</span>
+            </div>
+            <div className="mc-how-row">
+              <span>3.</span>
+              <span>Students book from this custom menu instead</span>
+            </div>
+            <div className="mc-how-row">
+              <span>4.</span>
+              <span>Delete the override to revert to the weekly menu</span>
+            </div>
+          </div>
         </div>
 
-        {/* Items List for Current Meal */}
-        <div className="form-card">
-          <h2>Current {currentItem.mealType === 'breakfast' ? '🥐 Breakfast' : currentItem.mealType === 'lunch' ? '🍛 Lunch' : '🍽️ Dinner'} Items</h2>
-          
-          {meals[currentItem.mealType].length === 0 ? (
-            <p className="no-items">No items added yet. Add some items above.</p>
-          ) : (
-            <div className="items-list">
-              {meals[currentItem.mealType].map((item, index) => (
-                <div key={index} className="item-card">
-                  <div className="item-info">
-                    <strong>{item.name}</strong>
-                    {item.hasQuantity ? (
-                      <span className="badge">Max: {item.maxQuantity} per person</span>
-                    ) : (
-                      <span className="badge simple">Simple (No quantity)</span>
-                    )}
+        {/* RIGHT: Editor */}
+        <div className="mc-editor">
+
+          {/* Date picker row */}
+          <div className="mc-date-bar">
+            <div className="mc-date-bar-left">
+              <label>Date</label>
+              <input
+                type="date"
+                value={selDate}
+                onChange={e => setSelDate(e.target.value)}
+                min={todayStr()}
+              />
+              <span className="mc-date-label">{fmtDate(selDate)}</span>
+            </div>
+            <div className="mc-date-bar-right">
+              {hasExisting
+                ? <span className="mc-status-badge override">Custom override active</span>
+                : <span className="mc-status-badge weekly">Using weekly menu</span>
+              }
+            </div>
+          </div>
+
+          {/* Actions row */}
+          <div className="mc-actions-row">
+            <button className="mc-btn-outline" onClick={copyFromWeekly}>
+              ↓ Load from weekly menu
+            </button>
+            {hasExisting && (
+              <button className="mc-btn-danger" disabled={deleting} onClick={handleDelete}>
+                {deleting ? '...' : 'Delete override'}
+              </button>
+            )}
+            <button
+              className="mc-btn-save"
+              disabled={saving || totalItems === 0}
+              onClick={handleSave}
+            >
+              {saving ? 'Saving…' : hasExisting ? 'Update override' : 'Save as override'}
+            </button>
+          </div>
+
+          {/* Meal tabs */}
+          <div className="mc-meal-tabs">
+            {MEALS.map(meal => (
+              <button
+                key={meal}
+                className={`mc-meal-tab ${activeMeal === meal ? 'active' : ''} ${MEAL_COLORS[meal]}`}
+                onClick={() => setActiveMeal(meal)}
+              >
+                {MEAL_ICONS[meal]}
+                <span>{meal.charAt(0).toUpperCase()+meal.slice(1)}</span>
+                <span className="mc-meal-count">{draft[meal].length}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Items list */}
+          <div className="mc-items-section">
+            {draft[activeMeal].length === 0 ? (
+              <div className="mc-empty-meal">
+                <span>{MEAL_ICONS[activeMeal]}</span>
+                <p>No items for {activeMeal} yet.</p>
+                <p className="mc-empty-hint">Add items below, or load from the weekly menu.</p>
+              </div>
+            ) : (
+              <div className="mc-items-list">
+                {draft[activeMeal].map((item, idx) => (
+                  <div key={idx} className="mc-item-row">
+                    <div className="mc-item-reorder">
+                      <button onClick={() => moveItem(activeMeal, idx, -1)} disabled={idx === 0}>↑</button>
+                      <button onClick={() => moveItem(activeMeal, idx, +1)} disabled={idx === draft[activeMeal].length-1}>↓</button>
+                    </div>
+                    <span className="mc-item-num">{idx+1}</span>
+                    <span className="mc-item-name">{item.name}</span>
+                    {item.hasQuantity
+                      ? <span className="mc-item-qty-badge">max {item.maxQuantity}</span>
+                      : <span className="mc-item-unlimited">unlimited</span>
+                    }
+                    <button className="mc-item-remove" onClick={() => removeItem(activeMeal, idx)}>×</button>
                   </div>
-                  <button
-                    type="button"
-                    className="btn-remove"
-                    onClick={() => removeItem(currentItem.mealType, index)}
-                  >
-                    Remove
-                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Add item form */}
+          <form className="mc-add-form" onSubmit={handleAddItem}>
+            <div className="mc-add-form-label">Add item to {activeMeal}</div>
+            <div className="mc-add-row">
+              <input
+                ref={inputRef}
+                type="text"
+                placeholder={`e.g. ${activeMeal==='breakfast'?'Poha, Tea, Idli':activeMeal==='lunch'?'Dal, Rice, Sabzi':'Khichdi, Roti, Salad'}`}
+                value={newItem.name}
+                onChange={e => { setNewItem(p=>({...p, name:e.target.value})); setAddError(''); }}
+                className="mc-name-input"
+              />
+              <label className="mc-qty-toggle">
+                <input
+                  type="checkbox"
+                  checked={newItem.hasQuantity}
+                  onChange={e => setNewItem(p=>({...p, hasQuantity:e.target.checked, maxQuantity:''}))}
+                />
+                <span className="mc-qty-track"><span className="mc-qty-thumb"/></span>
+                Limit qty
+              </label>
+              {newItem.hasQuantity && (
+                <input
+                  type="number" placeholder="Max" min="1"
+                  value={newItem.maxQuantity}
+                  onChange={e => setNewItem(p=>({...p, maxQuantity:e.target.value}))}
+                  className="mc-max-input"
+                />
+              )}
+              <button type="submit" className="mc-add-btn">+ Add</button>
+            </div>
+            {addError && <p className="mc-add-error">{addError}</p>}
+          </form>
+
+          {/* Full day preview */}
+          <div className="mc-preview">
+            <div className="mc-preview-label">Full day preview — {fmtDate(selDate)}</div>
+            <div className="mc-preview-grid">
+              {MEALS.map(meal => (
+                <div key={meal} className={`mc-preview-col ${MEAL_COLORS[meal]}`}>
+                  <div className="mc-preview-col-header">
+                    {MEAL_ICONS[meal]} {meal.charAt(0).toUpperCase()+meal.slice(1)}
+                    <span className="mc-preview-count">{draft[meal].length}</span>
+                  </div>
+                  {draft[meal].length === 0
+                    ? <p className="mc-preview-empty">No items</p>
+                    : draft[meal].map((item, i) => (
+                      <div key={i} className="mc-preview-item">
+                        <span>{item.name}</span>
+                        {item.hasQuantity && <span className="mc-preview-max">×{item.maxQuantity}</span>}
+                      </div>
+                    ))
+                  }
                 </div>
               ))}
             </div>
-          )}
-        </div>
-
-        {/* All Meals Summary */}
-        <div className="form-card">
-          <h2>Complete Menu Summary</h2>
-          <div className="summary-grid">
-            <div className="summary-card">
-              <h3>🥐 Breakfast</h3>
-              {meals.breakfast.length === 0 ? (
-                <p>No items</p>
-              ) : (
-                <ul>
-                  {meals.breakfast.map((item, i) => (
-                    <li key={i}>
-                      {item.name}
-                      {item.hasQuantity && ` (Max: ${item.maxQuantity})`}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-            <div className="summary-card">
-              <h3>🍛 Lunch</h3>
-              {meals.lunch.length === 0 ? (
-                <p>No items</p>
-              ) : (
-                <ul>
-                  {meals.lunch.map((item, i) => (
-                    <li key={i}>
-                      {item.name}
-                      {item.hasQuantity && ` (Max: ${item.maxQuantity})`}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-            <div className="summary-card">
-              <h3>🍽️ Dinner</h3>
-              {meals.dinner.length === 0 ? (
-                <p>No items</p>
-              ) : (
-                <ul>
-                  {meals.dinner.map((item, i) => (
-                    <li key={i}>
-                      {item.name}
-                      {item.hasQuantity && ` (Max: ${item.maxQuantity})`}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
           </div>
-        </div>
 
-        {/* Submit Buttons */}
-        <div className="form-actions">
-          <button type="button" className="btn-secondary" onClick={() => navigate('/admin')}>
-            Cancel
-          </button>
-          <button type="submit" className="btn-primary" disabled={loading}>
-            {loading ? 'Saving...' : 'Save Configuration'}
-          </button>
         </div>
-      </form>
+      </div>
     </div>
   );
 };

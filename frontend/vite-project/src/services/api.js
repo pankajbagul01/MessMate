@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -9,7 +9,7 @@ const api = axios.create({
   },
 });
 
-// Add token to every request
+// Attach JWT to every request
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -18,7 +18,18 @@ api.interceptors.request.use(
     }
     return config;
   },
+  (error) => Promise.reject(error)
+);
+
+// Auto-logout on 401 (expired / invalid token)
+api.interceptors.response.use(
+  (response) => response,
   (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }
     return Promise.reject(error);
   }
 );
@@ -28,9 +39,11 @@ export const register = (userData) => api.post('/auth/register', userData);
 export const login = (userData) => api.post('/auth/login', userData);
 
 // Meal Config APIs
-export const createMealConfig = (configData) => api.post('/mealconfig', configData);
-export const getMealConfigByDate = (date) => api.get(`/mealconfig/${date}`);
-export const getAllMealConfigs = () => api.get('/mealconfig');
+export const createMealConfig  = (data)       => api.post('/mealconfig', data);
+export const updateMealConfig  = (date, data) => api.put(`/mealconfig/${date}`, data);
+export const deleteMealConfig  = (date)       => api.delete(`/mealconfig/${date}`);
+export const getMealConfigByDate = (date)     => api.get(`/mealconfig/${date}`);
+export const getAllMealConfigs = ()            => api.get('/mealconfig');
 
 // Booking APIs
 export const createBooking = (bookingData) => api.post('/booking', bookingData);

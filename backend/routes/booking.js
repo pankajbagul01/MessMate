@@ -12,27 +12,29 @@ const router = express.Router();
 
 // ========== HELPER FUNCTIONS ==========
 
+// Parse YYYY-MM-DD as a LOCAL date (prevents UTC offset shifting the day in IST etc.)
+const parseLocalDate = (dateStr) => {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(y, m - 1, d);
+};
+
+// Today's date as YYYY-MM-DD in local time
+const todayLocalStr = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+};
+
 const canModifyBooking = (date) => {
-  const bookingDate = new Date(date);
-  const today = new Date();
-  
-  // Set to start of day for comparison
-  today.setHours(0, 0, 0, 0);
-  bookingDate.setHours(0, 0, 0, 0);
-  
-  // Can only book/cancel for TODAY or FUTURE dates
-  return bookingDate >= today;
+  // Simple string comparison works because format is YYYY-MM-DD
+  return date >= todayLocalStr();
 };
 
 const isBeforeDeadline = (date) => {
-  const bookingDate = new Date(date);
   const now = new Date();
-  
-  // For next day's booking, deadline is today 11:59 PM
-  const deadline = new Date(bookingDate);
+  // Deadline: 11:59:59 PM of the day BEFORE the booking date (local time)
+  const deadline = parseLocalDate(date);
   deadline.setDate(deadline.getDate() - 1);
   deadline.setHours(23, 59, 59, 999);
-  
   return now <= deadline;
 };
 
