@@ -1,0 +1,211 @@
+@import '../../theme.css';
+
+.wm-student-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 24px 20px 48px;
+}
+
+/* ── Header ── */
+.wm-student-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: 20px; gap: 16px; flex-wrap: wrap;
+}
+.wm-student-header h1 { font-size: 24px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+.wm-student-header p  { font-size: 14px; color: var(--text-secondary); }
+
+.wm-s-book-btn {
+  padding: 10px 20px; background: var(--gradient-primary); color: #fff;
+  border: none; border-radius: var(--radius-md); font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: all 0.18s; white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(249,115,22,0.25);
+}
+.wm-s-book-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(249,115,22,0.35); }
+
+/* ── Closure banner ── */
+.wm-s-closure-banner {
+  background: rgba(220,38,38,0.06); border-left: 4px solid var(--danger);
+  border-radius: var(--radius-md); padding: 11px 16px;
+  font-size: 13px; color: #991B1B; margin-bottom: 12px;
+}
+
+/* ── Layout ── */
+.wm-s-layout {
+  display: grid; grid-template-columns: 260px 1fr;
+  gap: 16px; align-items: start;
+}
+
+/* ── Day strip ── */
+.wm-s-day-strip {
+  display: flex; flex-direction: column; gap: 6px;
+  position: sticky; top: 88px;
+}
+
+.wm-s-day-card {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; border-radius: var(--radius-lg);
+  border: 1.5px solid var(--border); background: var(--bg-card);
+  cursor: pointer; transition: all 0.15s; text-align: left;
+  position: relative; width: 100%;
+}
+.wm-s-day-card:hover  { border-color: var(--primary); box-shadow: var(--shadow-sm); }
+.wm-s-day-card.active { border-color: var(--primary); background: rgba(249,115,22,0.05); box-shadow: var(--shadow-md); }
+.wm-s-day-card.today    .wm-s-day-name { color: var(--primary); }
+.wm-s-day-card.closed   { opacity: 0.6; }
+
+.wm-s-day-name {
+  font-size: 14px; font-weight: 700; color: var(--text-primary); min-width: 38px;
+}
+.wm-s-day-date { font-size: 12px; color: var(--text-secondary); flex: 1; }
+
+.wm-s-day-dots { display: flex; gap: 4px; align-items: center; }
+.wm-s-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.wm-s-dot.booked   { background: var(--success); }
+.wm-s-dot.partial  { background: #F59E0B; }
+.wm-s-dot.menu     { background: var(--border-dark); }
+.wm-s-dot.default  { background: var(--accent); }
+.wm-s-dot.closed   { background: var(--danger); }
+.wm-s-dot.no-menu  { background: var(--border); border: 1px solid var(--border-dark); }
+
+.wm-s-day-badge {
+  position: absolute; top: 6px; right: 8px;
+  font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 8px;
+  text-transform: uppercase; letter-spacing: 0.4px;
+}
+.wm-s-day-badge.today    { background: rgba(249,115,22,0.15); color: #C2410C; }
+.wm-s-day-badge.tomorrow { background: rgba(99,102,241,0.12); color: var(--accent-dark); }
+
+/* ── Detail panel ── */
+.wm-s-detail {
+  background: var(--bg-card); border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg); overflow: hidden;
+}
+
+.wm-s-detail-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 20px; border-bottom: 1px solid var(--border);
+  background: var(--bg-secondary); gap: 12px; flex-wrap: wrap;
+}
+.wm-s-detail-header h2     { font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px; }
+.wm-s-detail-date          { font-size: 13px; color: var(--text-muted); }
+.wm-s-detail-actions       { display: flex; align-items: center; gap: 10px; }
+
+.wm-s-closed-badge {
+  font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 20px;
+  background: rgba(220,38,38,0.1); color: var(--danger);
+  border: 1px solid rgba(220,38,38,0.2);
+}
+.wm-s-status-note { font-size: 12px; color: var(--text-muted); font-style: italic; }
+
+.wm-s-book-btn-sm {
+  padding: 8px 16px; background: var(--gradient-primary); color: #fff;
+  border: none; border-radius: var(--radius-md); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s;
+}
+.wm-s-book-btn-sm:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(249,115,22,0.3); }
+
+/* ── Meal tabs ── */
+.wm-s-meal-tabs {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  border-bottom: 1px solid var(--border);
+}
+.wm-s-meal-tab {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 13px 8px; border: none; background: none; cursor: pointer;
+  font-size: 13px; font-weight: 500; color: var(--text-secondary);
+  border-bottom: 3px solid transparent; transition: all 0.15s; position: relative;
+}
+.wm-s-meal-tab:hover  { color: var(--text-primary); background: var(--bg-secondary); }
+.wm-s-meal-tab.active { color: var(--primary); border-bottom-color: var(--primary); background: rgba(249,115,22,0.04); }
+
+.wm-s-tab-icon  { font-size: 16px; }
+.wm-s-tab-name  { font-size: 13px; }
+.wm-s-tab-count {
+  font-size: 11px; font-weight: 700; background: var(--bg-secondary);
+  padding: 1px 6px; border-radius: 10px; color: var(--text-muted);
+}
+.wm-s-meal-tab.active .wm-s-tab-count { background: rgba(249,115,22,0.1); color: var(--primary); }
+
+.wm-s-tab-dot {
+  position: absolute; top: 8px; right: 8px;
+  width: 7px; height: 7px; border-radius: 50%;
+}
+.wm-s-tab-dot.booked  { background: var(--success); }
+.wm-s-tab-dot.default { background: var(--accent); }
+.wm-s-tab-dot.closed  { background: var(--danger); }
+
+/* ── Meal content ── */
+.wm-s-meal-content { padding: 18px 20px; }
+
+.wm-s-meal-closed, .wm-s-no-menu {
+  text-align: center; padding: 32px 16px; color: var(--text-muted);
+}
+.wm-s-meal-closed span, .wm-s-no-menu span { font-size: 32px; display: block; margin-bottom: 10px; }
+.wm-s-meal-closed p,   .wm-s-no-menu p    { font-size: 14px; color: var(--text-secondary); margin-bottom: 4px; }
+.wm-s-sub { font-size: 12px; color: var(--text-muted) !important; }
+
+/* Booking status strip */
+.wm-s-booking-status {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 10px 14px; border-radius: var(--radius-md);
+  font-size: 13px; font-weight: 600; margin-bottom: 16px;
+}
+.wm-s-booking-status.booked  { background: rgba(22,163,74,0.08); color: #15803D; border: 1px solid rgba(22,163,74,0.2); }
+.wm-s-booking-status.default { background: rgba(99,102,241,0.08); color: var(--accent-dark); border: 1px solid rgba(99,102,241,0.2); }
+.wm-s-booking-status.none    { background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border); justify-content: space-between; }
+
+.wm-s-booked-items {
+  font-size: 12px; font-weight: 400; color: #15803D; opacity: 0.8;
+}
+.wm-s-inline-book {
+  background: none; border: none; color: var(--primary);
+  font-size: 13px; font-weight: 600; cursor: pointer; padding: 0;
+  white-space: nowrap;
+}
+.wm-s-inline-book:hover { text-decoration: underline; }
+
+/* Meal time */
+.wm-s-meal-time {
+  font-size: 12px; color: var(--text-muted); margin-bottom: 14px; font-weight: 500;
+}
+
+/* Items grid */
+.wm-s-items-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+.wm-s-item-card {
+  background: var(--bg-secondary); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 4px;
+  transition: box-shadow 0.15s;
+}
+.wm-s-item-card:hover { box-shadow: var(--shadow-sm); border-color: var(--border-dark); }
+.wm-s-item-name { font-size: 14px; font-weight: 500; color: var(--text-primary); }
+.wm-s-item-max  { font-size: 11px; color: var(--text-muted); }
+
+/* ── Legend ── */
+.wm-s-legend {
+  display: flex; gap: 16px; flex-wrap: wrap; margin-top: 24px;
+  padding: 12px 16px; background: var(--bg-card);
+  border: 1px solid var(--border); border-radius: var(--radius-lg);
+  font-size: 12px; color: var(--text-secondary);
+}
+.wm-s-legend span { display: flex; align-items: center; gap: 6px; }
+.wm-s-legend .wm-s-dot { flex-shrink: 0; }
+
+/* ── Responsive ── */
+@media (max-width: 720px) {
+  .wm-s-layout { grid-template-columns: 1fr; }
+  .wm-s-day-strip { flex-direction: row; flex-wrap: wrap; position: static; }
+  .wm-s-day-card  { flex: 1; min-width: 80px; flex-direction: column; align-items: center; padding: 10px 6px; }
+  .wm-s-day-date  { display: none; }
+  .wm-s-day-badge { display: none; }
+}
+@media (max-width: 480px) {
+  .wm-s-meal-tab .wm-s-tab-name { display: none; }
+  .wm-s-items-grid { grid-template-columns: repeat(2, 1fr); }
+  .wm-s-legend     { gap: 10px; }
+}

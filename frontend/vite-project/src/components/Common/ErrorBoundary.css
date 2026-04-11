@@ -1,0 +1,55 @@
+.eb-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    padding: 24px;
+  }
+  
+  .eb-card {
+    background: var(--bg-card);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 40px 36px;
+    max-width: 460px;
+    width: 100%;
+    text-align: center;
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .eb-icon  { font-size: 48px; margin-bottom: 16px; display: block; }
+  .eb-title {
+    font-size: 20px; font-weight: 700;
+    color: var(--text-primary); margin-bottom: 10px;
+  }
+  .eb-message {
+    font-size: 14px; color: var(--text-secondary);
+    line-height: 1.6; margin-bottom: 24px;
+  }
+  
+  .eb-details {
+    text-align: left; background: var(--bg-secondary);
+    border-radius: var(--radius-md); padding: 12px;
+    margin-bottom: 20px; font-size: 12px;
+    color: var(--danger); overflow: auto; max-height: 160px;
+  }
+  .eb-details summary {
+    cursor: pointer; font-weight: 600; margin-bottom: 8px; color: var(--text-secondary);
+  }
+  .eb-details pre { white-space: pre-wrap; word-break: break-all; }
+  
+  .eb-actions {
+    display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;
+  }
+  .eb-btn-primary {
+    padding: 10px 22px; background: var(--gradient-primary); color: #fff;
+    border: none; border-radius: var(--radius-md); font-size: 14px;
+    font-weight: 600; cursor: pointer; transition: all 0.15s;
+  }
+  .eb-btn-primary:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+  .eb-btn-secondary {
+    padding: 10px 22px; background: var(--bg-secondary); color: var(--text-secondary);
+    border: 1.5px solid var(--border); border-radius: var(--radius-md);
+    font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.15s;
+  }
+  .eb-btn-secondary:hover { border-color: var(--primary); color: var(--primary); }

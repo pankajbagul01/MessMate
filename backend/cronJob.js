@@ -1,12 +1,13 @@
 import cron from "node-cron";
 import { runAutoBooking } from "./utils/autoBooking.js";
 
-// Run at midnight (00:00) every day
-cron.schedule("0 0 * * *", () => {
-  console.log("=".repeat(50));
-  console.log("🕛 Midnight cron job triggered at:", new Date().toLocaleString());
-  console.log("=".repeat(50));
-  runAutoBooking();
+// Run at midnight (00:00) every day in server's local timezone
+cron.schedule("0 0 * * *", async () => {
+  try {
+    await runAutoBooking();
+  } catch (err) {
+    console.error("❌ Cron job crashed unexpectedly:", err);
+  }
 });
 
-console.log("✅ Cron job scheduled: Auto-booking will run daily at midnight");
+console.log("✅ Cron job scheduled: auto-booking runs daily at midnight");

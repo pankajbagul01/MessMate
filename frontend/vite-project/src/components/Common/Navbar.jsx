@@ -47,8 +47,9 @@ const Navbar = () => {
             // Student Links
             <>
               <Link to="/dashboard">Dashboard</Link>
-              <Link to="/default-preferences">Preferences</Link>
+              <Link to="/weekly-menu">Weekly Menu</Link>
               <Link to="/my-bookings">My Bookings</Link>
+              <Link to="/default-preferences">Preferences</Link>
             </>
           )}
           
