@@ -78,3 +78,10 @@ export default api;
 // Upcoming closures (student-accessible)
 export const getUpcomingClosures = () => api.get('/mess-closure/upcoming');
 export const getMenuForDate = (date) => api.get(`/booking/menu/${date}`);
+
+// Fee & Pricing APIs
+export const getMealPricing        = ()                   => api.get('/fees/pricing');
+export const setMealPricing        = (data)               => api.post('/fees/pricing', data);
+export const getMonthlyFees        = (year, month)        => api.get(`/fees/monthly/${year}/${month}`);
+export const markFeePaid           = (data)               => api.post('/fees/mark-paid', data);
+export const getStudentFeeHistory  = (userId)             => api.get(`/fees/student/${userId}`);

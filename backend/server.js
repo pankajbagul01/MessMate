@@ -42,6 +42,7 @@ import defaultRoutes     from "./routes/default.js";
 import mealConfigRoutes  from "./routes/mealConfig.js";
 import messClosureRoutes from "./routes/messClosure.js";
 import weeklyMenuRoutes  from "./routes/weeklyMenu.js";
+import feesRoutes        from "./routes/fees.js";
 
 import "./cronJob.js";
 import { seedAdmin } from "./utils/seedAdmin.js";
@@ -74,6 +75,7 @@ app.use("/api/default",      defaultRoutes);
 app.use("/api/mealconfig",   mealConfigRoutes);
 app.use("/api/mess-closure", messClosureRoutes);
 app.use("/api/weekly-menu",  weeklyMenuRoutes);
+app.use("/api/fees",         feesRoutes);
 
 app.get("/", (req, res) => res.json({ message: "MessMate API is running" }));
 
