@@ -90,8 +90,21 @@ const AdminDashboard = () => {
   const activeDate = tab === 'today' ? todayStr() : tab === 'tomorrow' ? tomorrowStr() : viewDate;
 
   // ── cooking summary helpers ──
-  const mealCount   = (meal) => summary ? Object.values(summary[meal]||{}).reduce((a,b)=>a+b,0) : 0;
-  const totalOrders = () => MEALS.reduce((a,m) => a + mealCount(m), 0);
+  // Number of students who booked a given meal (count of bookings, not item qty)
+  // The API returns item-level quantities; we track unique student bookings via analytics
+  const studentsForMeal = (meal) => {
+    if (!analytics?.[meal]) return 0;
+    // analytics[meal] = { itemName: totalQty } — number of entries tells us items booked
+    // but we need booking count. Use summary keys as proxy: any non-zero item means students booked
+    // Best proxy: take the max item count (non-quantity items are 1 per student)
+    const items = summary?.[meal] || {};
+    const nonQtyMax = Object.entries(items)
+      .filter(([,v]) => v > 0)
+      .map(([,v]) => v);
+    return nonQtyMax.length ? Math.max(...nonQtyMax) : 0;
+  };
+  const totalOrders = () => summary?.totalBookings || 0;
+  const hasAnyBooking = () => (summary?.totalBookings || 0) > 0 || MEALS.some(m => Object.keys(summary?.[m]||{}).length > 0);
 
   // ── closure handlers ──
   const handleAddClosure = async (e) => {
@@ -182,16 +195,25 @@ const AdminDashboard = () => {
                   <span className="ad-stat-num">{summary?.totalStudents || 0}</span>
                   <span className="ad-stat-label">Students booked</span>
                 </div>
-                <div className="ad-stat-card blue">
-                  <span className="ad-stat-num">{totalOrders()}</span>
-                  <span className="ad-stat-label">Total meal slots</span>
+                <div className="ad-stat-card ad-stat-breakfast">
+                  <span className="ad-stat-icon">🥐</span>
+                  <span className="ad-stat-num">{studentsForMeal('breakfast')}</span>
+                  <span className="ad-stat-label">Breakfast</span>
                 </div>
-                {MEALS.map(meal => (
-                  <div key={meal} className="ad-stat-card gray">
-                    <span className="ad-stat-num">{mealCount(meal)}</span>
-                    <span className="ad-stat-label">{meal.charAt(0).toUpperCase()+meal.slice(1)} items</span>
-                  </div>
-                ))}
+                <div className="ad-stat-card ad-stat-lunch">
+                  <span className="ad-stat-icon">🍛</span>
+                  <span className="ad-stat-num">{studentsForMeal('lunch')}</span>
+                  <span className="ad-stat-label">Lunch</span>
+                </div>
+                <div className="ad-stat-card ad-stat-dinner">
+                  <span className="ad-stat-icon">🍽️</span>
+                  <span className="ad-stat-num">{studentsForMeal('dinner')}</span>
+                  <span className="ad-stat-label">Dinner</span>
+                </div>
+                <div className="ad-stat-card blue">
+                  <span className="ad-stat-num">{summary?.totalBookings || 0}</span>
+                  <span className="ad-stat-label">Total bookings</span>
+                </div>
               </div>
 
               {/* Date label + nav */}
@@ -208,7 +230,7 @@ const AdminDashboard = () => {
               </div>
 
               {/* Cooking cards */}
-              {totalOrders() === 0 ? (
+              {!hasAnyBooking() ? (
                 <div className="ad-empty">
                   <span>📭</span>
                   <p>No bookings for this date yet.</p>
@@ -217,36 +239,38 @@ const AdminDashboard = () => {
                 <div className="ad-meals-grid">
                   {MEALS.map(meal => {
                     const items  = summary?.[meal] || {};
-                    const total  = mealCount(meal);
                     const sorted = Object.entries(items).sort((a,b)=>b[1]-a[1]);
+                    const studentCount = studentsForMeal(meal);
+                    // Identify which items have quantity > 1 per student (quantity-type items)
+                    // A quantity item will have a total that could be > studentCount
+                    const isQtyItem = (itemName, qty) => studentCount > 0 && qty > studentCount;
                     return (
                       <div key={meal} className={`ad-meal-card ad-meal-${meal}`}>
                         <div className="ad-meal-card-header">
                           <span>{MEAL_ICONS[meal]} {meal.charAt(0).toUpperCase()+meal.slice(1)}</span>
-                          <span className="ad-meal-total">{total} total</span>
+                          <span className="ad-meal-total">{studentCount} students</span>
                         </div>
                         {sorted.length === 0 ? (
                           <p className="ad-no-orders">No orders</p>
                         ) : (
-                          <>
-                            {sorted.map(([item, qty]) => (
-                              <div key={item} className="ad-item-row">
-                                <span className="ad-item-name">{item}</span>
+                          sorted.map(([item, qty]) => {
+                            const isQty = isQtyItem(item, qty);
+                            return (
+                              <div key={item} className={`ad-item-row ${isQty ? 'ad-item-row-qty' : ''}`}>
+                                <span className="ad-item-name">
+                                  {item}
+                                  {isQty && <span className="ad-qty-badge">qty</span>}
+                                </span>
                                 <div className="ad-item-bar-wrap">
-                                  <div className="ad-item-bar" style={{ width: `${Math.round((qty/total)*100)}%` }} />
+                                  <div
+                                    className={`ad-item-bar ${isQty ? 'ad-item-bar-qty' : ''}`}
+                                    style={{ width: `${Math.min(100, Math.round((qty / (isQty ? qty : studentCount || 1)) * 100))}%` }}
+                                  />
                                 </div>
-                                <span className="ad-item-qty">{qty}</span>
+                                <span className={`ad-item-qty ${isQty ? 'ad-item-qty-highlight' : ''}`}>{qty}</span>
                               </div>
-                            ))}
-                            {/* Analytics breakdown */}
-                            {analytics?.[meal] && Object.keys(analytics[meal]).length > 0 && (
-                              <div className="ad-analytics-note">
-                                {Object.entries(analytics[meal]).map(([item,qty]) => (
-                                  <span key={item} className="ad-analytics-chip">{item}: {qty}</span>
-                                ))}
-                              </div>
-                            )}
-                          </>
+                            );
+                          })
                         )}
                       </div>
                     );
